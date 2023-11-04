@@ -1,2 +1,2 @@
-# HEVA-Medical-Application
-Streamlit application for HEAV AI
+# HEVA-Medical-Demo-Applicaion
+Streamlit application for HEVA AI
