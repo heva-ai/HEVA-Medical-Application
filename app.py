@@ -11,7 +11,7 @@ from sklearn.decomposition import PCA
 mapping_dict = {
     "Schizophrenia": "schizophrenia_v1.h5",
     "Frontotemporal Dementia": "frontotemporalDementia_v1.h5",
-    "Alzhiemers": "Alzheimers_v3.h5",
+    "Alzhiemers": "Alzheimers_vS.h5",
     "Parkinsons": "Parkinson_v1.h5",
     "Depression": "Depression_v1.h5",
     "Multi Modal 1": "multiModal_1_v5.h5",
