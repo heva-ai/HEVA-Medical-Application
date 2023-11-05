@@ -6,8 +6,8 @@ import os
 import mne
 import tensorflow as tf
 from sklearn.decomposition import PCA
-
-
+from matplotlib.backends.backend_pdf import PdfPages
+from io import BytesIO
 
 # Placeholder for function to verify user - in practice, replace with database lookup
 def check_user(username, password):
@@ -278,6 +278,79 @@ else:
             st.error(f'An error occurred during EEG data visualization: {e}')
 
 
+    def create_pdf_report(data, bands):
+        # Create a PDF buffer in memory
+        pdf_buffer = BytesIO()
+        pdf_pages = PdfPages(pdf_buffer)
+        
+        # EEG Data Visualization plots
+        fig = data.plot(n_channels=30, title='Raw EEG Data', show=False)
+        plt.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        # Filtering section
+        data.filter(0.5, 50)
+        fig = data.plot(n_channels=15, title="Filtered EEG Data", scalings={"eeg": 75e-6}, duration=10, start=10, show=False)
+        plt.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        # Frequency bands
+        for band, freq in bands.items():
+            fmin, fmax = freq
+            fig, ax = plt.subplots()
+            data.plot_psd(fmin=fmin, fmax=fmax, show=False, average=True, ax=ax)
+            ax.axvspan(fmin, fmax, color='orange', alpha=0.4, label=f'{band} {fmin}-{fmax} Hz')
+            ax.set_title(f'{band} Power')
+            ax.legend(loc='upper right')
+            plt.tight_layout()
+            pdf_pages.savefig(fig)
+            plt.close(fig)
+        
+        # Bandpass filtering
+        data.filter(l_freq=1.0, h_freq=30.0)
+        fig, ax = plt.subplots()
+        data.plot_psd(fmax=30, ax=ax, show=False)
+        plt.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        # Power Spectral Density
+        annotations = mne.Annotations(onset=[10, 20, 30], duration=[1, 2, 1], description=['Event 1', 'Event 2', 'Event 3'])
+        data.set_annotations(annotations)
+        fig = data.plot(start=5, duration=5, color='b', event_color='r', show=False)
+        plt.tight_layout()
+        pdf_pages.savefig(fig)
+        plt.close(fig)
+
+        # Close the PDF and save to a buffer
+        pdf_pages.close()
+        pdf_buffer.seek(0)
+        return pdf_buffer
+    
+    def generate_file(data):
+        # Information extraction and plotting code goes here
+        # For brevity, this is left as a placeholder comment
+
+        # Define frequency bands
+        bands = {
+            'Delta': (0.5, 4),
+            'Theta': (4, 8),
+            'Alpha': (8, 13),
+            'Beta': (13, 30),
+            'Gamma': (30, 45)
+        }
+
+        if st.button("Generate PDF Report"):
+            pdf_buffer = create_pdf_report(data, bands)
+            st.download_button(
+                label="Download EEG Report as PDF",
+                data=pdf_buffer,
+                file_name="eeg_report.pdf",
+                mime="application/pdf"
+            )
+
     if uploaded_file is not None:
         with st.spinner("Reading & Processing EEG data..."):
             model = load_selected_model(mapping_dict[selected_model_name])
@@ -363,10 +436,10 @@ else:
         # st.write(Y)
         with st.spinner("Displaying EEG data..."):
             display_file_info(raw)
+            generate_file(raw)
 
         # st.write("**All the results are out of 1**")
         os.remove(file_name)
-    # if st.button('Logout'):
-    #     logout()
+
 
 
